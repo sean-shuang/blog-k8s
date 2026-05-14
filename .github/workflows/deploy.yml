@@ -1,0 +1,30 @@
+name: Build and Deploy to ECS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Aliyun Registry
+        run: echo "${{ secrets.ALIYUN_PASSWORD }}" | docker login -u ${{ secrets.ALIYUN_USERNAME }} --password-stdin ${{ secrets.ALIYUN_REGISTRY }}
+
+      - name: Build and push API image
+        run: |
+          cd blog-api
+          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAMESPACE }}/blog-api:${{ github.sha }} .
+          docker push ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAMESPACE }}/blog-api:${{ github.sha }}
+
+      - name: Deploy to ECS via SSH
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: root
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            kubectl -n blog set image deployment/blog-api blog-api=${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_NAMESPACE }}/blog-api:${{ github.sha }}

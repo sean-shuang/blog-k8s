@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>我的博客</title>
+  <style>
+    body { max-width: 700px; margin: 40px auto; font-family: sans-serif; }
+    .article { border-bottom: 1px solid #ddd; padding: 10px 0; cursor: pointer; }
+    .article h2 { margin: 0; }
+    #detail { margin-top: 20px; }
+    button { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>📝 轻享博客</h1>
+  <div id="list"></div>
+  <div id="detail"></div>
+
+  <script>
+    const listEl = document.getElementById('list');
+    const detailEl = document.getElementById('detail');
+
+    async function loadList() {
+      const res = await fetch('/api/articles');
+      const articles = await res.json();
+      listEl.innerHTML = articles.map(a => 
+        `<div class="article" onclick="loadDetail(${a.id})">
+          <h2>${a.title}</h2>
+          <small>${new Date(a.created_at).toLocaleString()}</small>
+        </div>`
+      ).join('');
+    }
+
+    async function loadDetail(id) {
+      const res = await fetch(`/api/articles/${id}`);
+      const article = await res.json();
+      detailEl.innerHTML = `<h2>${article.title}</h2>
+        <p>${article.content}</p>
+        <button onclick="loadList();detailEl.innerHTML='';">← 返回列表</button>`;
+    }
+
+    loadList();
+  </script>
+</body>
+</html>
